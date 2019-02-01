@@ -20,6 +20,28 @@ export default class App extends Component {
       this.setState({ uid, email, displayName });
     });
   }
+  componentDidUpdate(_, prevState) {
+    if (this.state.uid && !prevState.uid) {
+      this.onSetUid();
+    }
+  }
+  onSetUid() {
+    this.listenUser();
+    this.updateUser();
+  }
+  listenUser() {
+    const { uid } = this.state;
+    usersRef
+      .doc(uid)
+      .onSnapshot(_ => this.setState({ user: _.data() }));
+  }
+  updateUser() {
+    const { uid, email, displayName } = this.state;
+    usersRef
+      .doc(uid)
+      .get()
+      .then(async ({ ref, exists }) => ref[exists ? 'update' : 'set']({ uid, email, displayName }));
+  }
   signIn = (providerName) => {
     const provider = new firebase.auth[`${providerName}AuthProvider`]();
     auth.signInWithRedirect(provider);
@@ -39,12 +61,13 @@ export default class App extends Component {
       .then(message => console.log(message));
   }
   render() {
-    const { uid, email, displayName } = this.state;
+    const { user } = this.state;
     return (
       <div className="App">
         {
-          uid ? <button type="button" onClick={this.signIn.bind(this, 'Google')}>SignIn</button>
-            : <button type="button" onClick={this.onClick}>hit me plz</button>
+          user
+            ? <button type="button" onClick={this.onClick}>hit me plz</button>
+            : <button type="button" onClick={this.signIn.bind(this, 'Google')}>SignIn</button>
         }
         <button type="button" onClick={this.signOut}>SignOut</button>
       </div>
