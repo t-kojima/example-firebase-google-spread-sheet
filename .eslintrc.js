@@ -6,6 +6,7 @@ module.exports = {
   extends: ['eslint:recommended', 'airbnb', 'react-app'],
   plugins: ['import', 'react'],
   rules: {
+    'no-undef': 0,
     'max-len': 0,
     // 値を返すreturnと返さないreturnが混在しないこと
     'consistent-return': 1,

@@ -11,10 +11,8 @@ https://qiita.com/shin1ogawa/items/49a076f62e5f17f18fe5
 - APIキーの作成
 - Google Sheets APIの有効化
 
-# React
+# API Guide
 
-```
-yarn add gapi-client // v3だこれ
-
-yarn add googleapis google-auth-library
-```
+https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values/update
+https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values/append
+https://developers.google.com/sheets/guides/values?hl=ja
