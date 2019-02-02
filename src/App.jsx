@@ -1,9 +1,10 @@
+/* eslint-disable no-undef */
 import React, { Component } from 'react';
-import firebase from './firebase';
 
-const auth = firebase.auth();
-const db = firebase.firestore();
-const usersRef = db.collection('users');
+const CLIENT_ID = process.env.REACT_APP_CLIENT_ID;
+const API_KEY = process.env.REACT_APP_API_KEY;
+const DISCOVERY_DOCS = ['https://sheets.googleapis.com/$discovery/rest?version=v4'];
+const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly';
 
 export default class App extends Component {
   constructor() {
@@ -11,65 +12,55 @@ export default class App extends Component {
     this.state = {};
   }
   componentWillMount() {
-    auth.onAuthStateChanged((firebaseUser) => {
-      if (!(firebaseUser && firebaseUser.displayName)) {
-        auth.signOut();
-        return;
-      }
-      const { email, uid, displayName } = firebaseUser;
-      this.setState({ uid, email, displayName });
+    gapi.load('client:auth2', () => {
+      gapi.client.init({
+        apiKey: API_KEY,
+        clientId: CLIENT_ID,
+        discoveryDocs: DISCOVERY_DOCS,
+        scope: SCOPES,
+      }).then(() => {
+        // Listen for sign-in state changes.
+        gapi.auth2.getAuthInstance().isSignedIn.listen(this.updateSigninStatus);
+        // Handle the initial sign-in state.
+        this.updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+      }).catch((error) => {
+        console.log(JSON.stringify(error, null, 2));
+      });
     });
   }
-  componentDidUpdate(_, prevState) {
-    if (this.state.uid && !prevState.uid) {
-      this.onSetUid();
+  updateSigninStatus = (isSignedIn) => {
+    this.setState({ isSignedIn });
+    if (isSignedIn) {
+      this.listMajors();
     }
   }
-  onSetUid() {
-    this.listenUser();
-    this.updateUser();
+  listMajors() {
+    gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
+      range: 'Class Data!A2:E',
+    }).then((response) => {
+      const range = response.result;
+      if (range.values.length > 0) {
+        console.log('Name, Major:');
+        range.values.forEach(value => console.log(`${value[0]} ${value[4]}`));
+      } else {
+        console.log('No data found.');
+      }
+    }).catch((response) => {
+      console.log(`Error: ${response.result.error.message}`);
+    });
   }
-  listenUser() {
-    const { uid } = this.state;
-    usersRef
-      .doc(uid)
-      .onSnapshot(_ => this.setState({ user: _.data() }));
-  }
-  updateUser() {
-    const { uid, email, displayName } = this.state;
-    usersRef
-      .doc(uid)
-      .get()
-      .then(async ({ ref, exists }) => ref[exists ? 'update' : 'set']({ uid, email, displayName }));
-  }
-  signIn = (providerName) => {
-    const provider = new firebase.auth[`${providerName}AuthProvider`]();
-    auth.signInWithRedirect(provider);
-  };
-  signOut = () => {
-    auth.signOut();
-    console.log('Sign Out done');
-  }
-  onClick = () => {
-    auth.currentUser.getIdToken(true)
-      .then((token) => {
-        const url = `${process.env.REACT_APP_CLOUD_FUNCTIONS_ENDPOINT}/insertData`;
-        const headers = { 'Firebase-User-Token': token };
-        return fetch(url, { headers });
-      })
-      .then(res => res.text())
-      .then(message => console.log(message));
-  }
+  signIn = () => gapi.auth2.getAuthInstance().signIn();
+  signOut = () => gapi.auth2.getAuthInstance().signOut();
   render() {
-    const { user } = this.state;
+    const { isSignedIn } = this.state;
     return (
       <div className="App">
         {
-          user
-            ? <button type="button" onClick={this.onClick}>hit me plz</button>
-            : <button type="button" onClick={this.signIn.bind(this, 'Google')}>SignIn</button>
+          isSignedIn
+            ? <button type="button" onClick={this.signOut}>SignOut</button>
+            : <button type="button" onClick={this.signIn}>Authorize</button>
         }
-        <button type="button" onClick={this.signOut}>SignOut</button>
       </div>
     );
   }
