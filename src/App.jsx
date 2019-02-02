@@ -9,24 +9,32 @@ const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly';
 export default class App extends Component {
   constructor() {
     super();
-    this.state = {};
+    this.state = {
+      ready: false,
+    };
   }
   componentWillMount() {
-    gapi.load('client:auth2', () => {
-      gapi.client.init({
-        apiKey: API_KEY,
-        clientId: CLIENT_ID,
-        discoveryDocs: DISCOVERY_DOCS,
-        scope: SCOPES,
-      }).then(() => {
-        // Listen for sign-in state changes.
-        gapi.auth2.getAuthInstance().isSignedIn.listen(this.updateSigninStatus);
-        // Handle the initial sign-in state.
-        this.updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
-      }).catch((error) => {
-        console.log(JSON.stringify(error, null, 2));
+    const script = document.createElement('script');
+    script.src = 'https://apis.google.com/js/api.js';
+    script.onload = () => {
+      gapi.load('client:auth2', () => {
+        gapi.client.init({
+          apiKey: API_KEY,
+          clientId: CLIENT_ID,
+          discoveryDocs: DISCOVERY_DOCS,
+          scope: SCOPES,
+        }).then(() => {
+          // Listen for sign-in state changes.
+          gapi.auth2.getAuthInstance().isSignedIn.listen(this.updateSigninStatus);
+          // Handle the initial sign-in state.
+          this.updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+          this.setState({ ready: true });
+        }).catch((error) => {
+          console.log(JSON.stringify(error, null, 2));
+        });
       });
-    });
+    };
+    document.body.appendChild(script);
   }
   updateSigninStatus = (isSignedIn) => {
     this.setState({ isSignedIn });
@@ -53,11 +61,11 @@ export default class App extends Component {
   signIn = () => gapi.auth2.getAuthInstance().signIn();
   signOut = () => gapi.auth2.getAuthInstance().signOut();
   render() {
-    const { isSignedIn } = this.state;
+    const { ready, isSignedIn } = this.state;
     return (
       <div className="App">
         {
-          isSignedIn
+          ready && isSignedIn
             ? <button type="button" onClick={this.signOut}>SignOut</button>
             : <button type="button" onClick={this.signIn}>Authorize</button>
         }
