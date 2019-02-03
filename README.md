@@ -6,10 +6,17 @@ https://qiita.com/shin1ogawa/items/49a076f62e5f17f18fe5
 
 # Google APIs
 
-- プロジェクト作成
-- OAuthクライアントID発行
-- APIキーの作成
+- プロジェクト作成(https://console.developers.google.com)
 - Google Sheets APIの有効化
+- OAuthクライアントID発行
+  - 名前：WebClient（任意）
+  - 「承認済みの JavaScript 生成元」にドメインを指定
+- APIキーの作成
+  - 名前：APIKey（任意）
+  - アプリケーションの制限
+    - HTTPリファラーを選択し、ドメインを指定
+  - APIの制限
+    - Google Sheets API
 
 # API Guide
 
